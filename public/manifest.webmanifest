@@ -1,0 +1,12 @@
+{
+  "name": "Dokapp: Bienestar",
+  "short_name": "Dokapp",
+  "description": "Pequeñas acciones. Grandes cambios.",
+  "lang": "es",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EAF7FF",
+  "theme_color": "#73C9F5",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
