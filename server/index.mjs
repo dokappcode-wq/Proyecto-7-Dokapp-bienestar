@@ -26,6 +26,11 @@ pg.types.setTypeParser(1182, (v) => textArray(v));
 pg.types.setTypeParser(2951, (v) => textArray(v));
 pg.types.setTypeParser(1184, (v) => new Date(v).toISOString());
 
+if (PROD && !process.env.DATABASE_URL) {
+  console.error('Falta la variable DATABASE_URL: conecta una base de datos Postgres al servicio.');
+  process.exit(1);
+}
+
 const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL ?? 'postgres://dokapp:dokapp@localhost:5432/dokapp',
   ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
