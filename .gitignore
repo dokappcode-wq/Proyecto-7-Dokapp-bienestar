@@ -5,3 +5,4 @@ dist-single
 .env.local
 *.log
 dokapp-netlify.zip
+dokapp-sitio-netlify.zip

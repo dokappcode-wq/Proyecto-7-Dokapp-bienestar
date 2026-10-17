@@ -29,8 +29,9 @@ La clave *anon* es pública por diseño. Lo que protege los datos son las reglas
 ## 3. Subir a Netlify (1 min)
 
 1. Entra en https://app.netlify.com/drop (puedes crear la cuenta gratis en ese momento).
-2. Arrastra **la carpeta `dokapp-web`** completa a la página.
-3. Netlify te da una dirección del tipo `https://nombre-raro.netlify.app`. Puedes cambiarla en **Site configuration** → **Change site name**.
+2. Arrastra **la carpeta `dokapp-web`** completa (o un zip cuyo primer nivel contenga `index.html`) a la página. Si subes una carpeta o un zip que tenga `dokapp-web` dentro, Netlify mostrará «Page not found» porque no encuentra `index.html` en la raíz.
+3. Si el sitio aparece como **Private**, pulsa **Make public** para que otras personas puedan entrar.
+4. Netlify te da una dirección del tipo `https://nombre-raro.netlify.app`. Puedes cambiarla en **Site configuration** → **Change site name**.
 
 Para actualizar la app más adelante: en tu sitio de Netlify, pestaña **Deploys**, vuelve a arrastrar la carpeta.
 
