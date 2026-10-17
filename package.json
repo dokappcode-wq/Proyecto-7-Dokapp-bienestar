@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Dokapp: Bienestar — red social de pequeñas acciones de bienestar",
   "private": true,
+  "engines": { "node": ">=20" },
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,7 +12,9 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "screenshots": "node scripts/screenshots.mjs"
+    "screenshots": "node scripts/screenshots.mjs",
+    "build:server": "tsc --noEmit && VITE_BACKEND=api vite build",
+    "start": "node server/index.mjs"
   },
   "repository": {
     "type": "git",
@@ -20,6 +23,7 @@
   "dependencies": {
     "@fontsource-variable/nunito": "^5.3.0",
     "@supabase/supabase-js": "^2.118.0",
+    "pg": "^8.23.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },

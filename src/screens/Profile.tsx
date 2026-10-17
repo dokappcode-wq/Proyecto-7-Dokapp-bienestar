@@ -357,7 +357,7 @@ export function SettingsScreen() {
           No analizamos tus fotos para inferir diagnósticos. Si necesitas ayuda, contacta con profesionales sanitarios; en España puedes llamar al 024 (línea de atención a la conducta suicida).
         </p>
       </div>
-      <p className="subtle small mt center">Almacenamiento: {backend.kind === 'supabase' ? 'Supabase (nube)' : backend.kind === 'demo' ? 'Demostración (no se guarda)' : 'Este dispositivo'}</p>
+      <p className="subtle small mt center">Almacenamiento: {backend.kind === 'supabase' ? 'Supabase (nube)' : backend.kind === 'api' ? 'Servidor de Dokapp (nube)' : backend.kind === 'demo' ? 'Demostración (no se guarda)' : 'Este dispositivo'}</p>
 
       <div className="col mt-l">
         <button className="btn ghost block" onClick={async () => { await backend.signOut(); await refresh(); router.navigate('/bienvenida', { replace: true }); }}><Icon name="logout" size={18} /> Cerrar sesión</button>

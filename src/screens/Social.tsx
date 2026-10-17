@@ -218,7 +218,7 @@ function People() {
 // ---- Grupos -----------------------------------------------------------------------
 
 function Groups() {
-  const { router, run, now } = useApp();
+  const { router, run, now, backend } = useApp();
   const { s, myGroups } = useData();
   const [create, setCreate] = useState(false);
   const [join, setJoin] = useState(false);
@@ -253,7 +253,7 @@ function Groups() {
           })}
         </div>
       ) : (
-        <Empty pose="wave" title="Aún no tienes grupos" text="Crea uno con tus amistades o únete con un código de invitación. ¿Quieres probar? Usa DOKA-HABITOS." />
+        <Empty pose="wave" title="Aún no tienes grupos" text={`Crea uno con tus amistades o únete con un código de invitación.${backend.kind === 'local' || backend.kind === 'demo' ? ' ¿Quieres probar? Usa DOKA-HABITOS.' : ''}`} />
       )}
 
       <Sheet open={create} onClose={() => setCreate(false)} title="Nuevo grupo">

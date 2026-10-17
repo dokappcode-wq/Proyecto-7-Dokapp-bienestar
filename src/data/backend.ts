@@ -15,11 +15,12 @@ export interface NewGroupInput {
 /**
  * Contrato común de persistencia. Hay dos implementaciones:
  *  · LocalBackend    — datos en el dispositivo (localStorage + IndexedDB); también el modo demo en memoria.
+ *  · ApiBackend      — servidor propio de Dokapp (server/index.mjs) sobre Postgres.
  *  · SupabaseBackend — autenticación, Postgres con RLS y Storage.
  * La interfaz trabaja siempre en nombre de la persona con sesión iniciada.
  */
 export interface Backend {
-  readonly kind: 'local' | 'demo' | 'supabase';
+  readonly kind: 'local' | 'demo' | 'supabase' | 'api';
   currentUserId(): Promise<string | null>;
   signUp(email: string, password: string): Promise<void>;
   signIn(email: string, password: string): Promise<void>;

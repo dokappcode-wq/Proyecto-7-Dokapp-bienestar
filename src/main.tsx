@@ -3,6 +3,7 @@ import './styles.css';
 import { StrictMode, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import { DokappApp } from './App';
+import { ApiBackend } from './data/apiBackend';
 import type { Backend } from './data/backend';
 import { LocalBackend } from './data/localBackend';
 import { SupabaseBackend } from './data/supabaseBackend';
@@ -18,6 +19,7 @@ function createBackend(): Backend {
   const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
   const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
   if (url && key) return new SupabaseBackend(url, key);
+  if (import.meta.env.VITE_BACKEND === 'api') return new ApiBackend();
   return new LocalBackend(browserKV(), createPhotoStore());
 }
 

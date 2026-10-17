@@ -29,7 +29,26 @@ npm run build:single # todo en un único dist-single/index.html (abre en la gale
 npm run screenshots  # capturas en docs/screenshots (con `npm run dev` arrancado)
 ```
 
-## Conectar Supabase
+## Servidor propio (producción)
+
+`server/index.mjs` es un servidor Node sin frameworks que sirve la app compilada y una API JSON sobre Postgres:
+
+- Cuentas con correo y contraseña (scrypt), sesión en cookie `httpOnly`, protección CSRF por origen.
+- Fotos guardadas en Postgres y servidas solo a quien puede verlas.
+- La privacidad se aplica en cada consulta: acciones públicas, de grupo o privadas; emoción y reflexión nunca salen del autor salvo que comparta la emoción.
+- Límite de tres acciones por día con bloqueo transaccional.
+- El esquema (`server/schema.sql`) se aplica solo al arrancar.
+
+```bash
+npm run build:server                 # compila el cliente en modo API
+DATABASE_URL=postgres://... npm start  # PORT=3000 por defecto
+```
+
+Variables: `DATABASE_URL`, `DATABASE_SSL=true` si la base de datos lo exige, `NODE_ENV=production` (cookies `Secure`).
+
+En Render: servicio web Node con build `npm ci --include=dev && npm run build:server`, arranque `npm start` y una base de datos Postgres.
+
+## Conectar Supabase (alternativa)
 
 1. Crea un proyecto en Supabase y ejecuta [`supabase/schema.sql`](supabase/schema.sql) en el editor SQL.
 2. Copia `.env.example` a `.env` y rellena `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`.
