@@ -29,7 +29,15 @@ npm run build:single # todo en un único dist-single/index.html (abre en la gale
 npm run screenshots  # capturas en docs/screenshots (con `npm run dev` arrancado)
 ```
 
-## Servidor propio (producción)
+## Publicar gratis (Netlify + Supabase)
+
+Guía paso a paso: [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md). En resumen:
+
+1. Ejecuta `supabase/schema.sql` en un proyecto gratuito de Supabase.
+2. Ejecuta `npm run build` y rellena `dist/config.js` con la URL y la clave *anon*. `config.js` se lee al cargar la página, así que no hace falta recompilar.
+3. Arrastra `dist/` a https://app.netlify.com/drop.
+
+## Servidor propio (alternativa)
 
 `server/index.mjs` es un servidor Node sin frameworks que sirve la app compilada y una API JSON sobre Postgres:
 

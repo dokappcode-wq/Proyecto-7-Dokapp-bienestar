@@ -16,8 +16,10 @@ function createBackend(): Backend {
   if (new URLSearchParams(window.location.search).has('demo')) {
     return new LocalBackend(new MemoryKV(), new MemoryPhotoStore(), { demo: true });
   }
-  const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+  // config.js (editable tras compilar) tiene prioridad sobre las variables de compilación.
+  const cfg = (window as { DOKAPP_CONFIG?: { supabaseUrl?: string; supabaseAnonKey?: string } }).DOKAPP_CONFIG;
+  const url = cfg?.supabaseUrl?.trim() || (import.meta.env.VITE_SUPABASE_URL as string | undefined);
+  const key = cfg?.supabaseAnonKey?.trim() || (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined);
   if (url && key) return new SupabaseBackend(url, key);
   if (import.meta.env.VITE_BACKEND === 'api') return new ApiBackend();
   return new LocalBackend(browserKV(), createPhotoStore());

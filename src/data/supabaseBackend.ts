@@ -42,6 +42,7 @@ function translate(msg: string): string {
   if (/already registered/i.test(msg)) return 'Ya existe una cuenta con ese correo.';
   if (/Password should be/i.test(msg)) return 'La contraseña debe tener al menos 8 caracteres.';
   if (/duplicate key.*username/i.test(msg)) return 'Ese nombre de usuario ya está en uso.';
+  if (/Failed to fetch|NetworkError|fetch failed|Load failed/i.test(msg)) return 'No se puede conectar con el servidor. Comprueba tu conexión y la configuración de config.js.';
   if (/Email not confirmed/i.test(msg)) return 'Confirma tu correo antes de iniciar sesión.';
   return msg;
 }

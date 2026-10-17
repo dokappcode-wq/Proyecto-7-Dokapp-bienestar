@@ -278,57 +278,86 @@ alter table public.rest_days enable row level security;
 alter table public.user_settings enable row level security;
 
 -- Perfiles: los datos básicos son visibles para buscar y seguir; solo tú editas el tuyo.
+drop policy if exists profiles_read on public.profiles;
 create policy profiles_read on public.profiles for select to authenticated using (true);
+drop policy if exists profiles_update on public.profiles;
 create policy profiles_update on public.profiles for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
 
 -- Acciones: tuyas, públicas de perfiles visibles, o compartidas con un grupo tuyo.
+drop policy if exists actions_read on public.actions;
 create policy actions_read on public.actions for select to authenticated using (
   user_id = auth.uid()
   or (visibility = 'public' and public.can_see_profile_content(user_id))
   or (visibility = 'groups' and group_ids && public.my_group_ids())
 );
+drop policy if exists actions_insert on public.actions;
 create policy actions_insert on public.actions for insert to authenticated with check (user_id = auth.uid());
+drop policy if exists actions_update on public.actions;
 create policy actions_update on public.actions for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists actions_delete on public.actions;
 create policy actions_delete on public.actions for delete to authenticated using (user_id = auth.uid());
 
 -- Emoción y reflexión: privadas siempre.
+drop policy if exists private_all on public.action_private;
 create policy private_all on public.action_private for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 -- Seguidores.
+drop policy if exists follows_read on public.follows;
 create policy follows_read on public.follows for select to authenticated
   using (status = 'accepted' or follower_id = auth.uid() or following_id = auth.uid());
+drop policy if exists follows_insert on public.follows;
 create policy follows_insert on public.follows for insert to authenticated with check (follower_id = auth.uid());
+drop policy if exists follows_accept on public.follows;
 create policy follows_accept on public.follows for update to authenticated using (following_id = auth.uid()) with check (following_id = auth.uid());
+drop policy if exists follows_delete on public.follows;
 create policy follows_delete on public.follows for delete to authenticated using (follower_id = auth.uid() or following_id = auth.uid());
 
 -- Grupos: privados, solo para sus miembros.
+drop policy if exists groups_read on public.groups;
 create policy groups_read on public.groups for select to authenticated using (id = any(public.my_group_ids()) or created_by = auth.uid());
+drop policy if exists groups_insert on public.groups;
 create policy groups_insert on public.groups for insert to authenticated with check (created_by = auth.uid());
+drop policy if exists groups_update on public.groups;
 create policy groups_update on public.groups for update to authenticated using (public.is_group_admin(id));
+drop policy if exists groups_delete on public.groups;
 create policy groups_delete on public.groups for delete to authenticated using (public.is_group_admin(id));
 
+drop policy if exists members_read on public.group_members;
 create policy members_read on public.group_members for select to authenticated using (group_id = any(public.my_group_ids()));
+drop policy if exists members_update_self on public.group_members;
 create policy members_update_self on public.group_members for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists members_leave on public.group_members;
 create policy members_leave on public.group_members for delete to authenticated using (user_id = auth.uid() or public.is_group_admin(group_id));
 
 -- Reacciones y comentarios: solo sobre acciones que puedes ver (la subconsulta respeta la RLS de actions).
+drop policy if exists reactions_read on public.reactions;
 create policy reactions_read on public.reactions for select to authenticated using (exists(select 1 from public.actions a where a.id = action_id));
+drop policy if exists reactions_insert on public.reactions;
 create policy reactions_insert on public.reactions for insert to authenticated with check (user_id = auth.uid() and exists(select 1 from public.actions a where a.id = action_id));
+drop policy if exists reactions_delete on public.reactions;
 create policy reactions_delete on public.reactions for delete to authenticated using (user_id = auth.uid());
 
+drop policy if exists comments_read on public.comments;
 create policy comments_read on public.comments for select to authenticated using (exists(select 1 from public.actions a where a.id = action_id));
+drop policy if exists comments_insert on public.comments;
 create policy comments_insert on public.comments for insert to authenticated with check (
   user_id = auth.uid() and exists(select 1 from public.actions a where a.id = action_id and a.allow_comments)
 );
+drop policy if exists comments_delete on public.comments;
 create policy comments_delete on public.comments for delete to authenticated using (
   user_id = auth.uid() or exists(select 1 from public.actions a where a.id = action_id and a.user_id = auth.uid())
 );
 
 -- Datos estrictamente personales.
+drop policy if exists goals_own on public.goals;
 create policy goals_own on public.goals for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists lessons_own on public.lesson_progress;
 create policy lessons_own on public.lesson_progress for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists journal_own on public.journal_entries;
 create policy journal_own on public.journal_entries for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists rest_own on public.rest_days;
 create policy rest_own on public.rest_days for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists settings_own on public.user_settings;
 create policy settings_own on public.user_settings for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 -- ---------------------------------------------------------------------------
@@ -337,15 +366,18 @@ create policy settings_own on public.user_settings for all to authenticated usin
 
 insert into storage.buckets (id, name, public) values ('photos', 'photos', false) on conflict do nothing;
 
+drop policy if exists photos_upload on storage.objects;
 create policy photos_upload on storage.objects for insert to authenticated
   with check (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists photos_delete on storage.objects;
 create policy photos_delete on storage.objects for delete to authenticated
   using (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists photos_read on storage.objects;
 create policy photos_read on storage.objects for select to authenticated using (
   bucket_id = 'photos' and (
-    (storage.foldername(name))[1] = auth.uid()::text
-    or exists(select 1 from public.actions a where a.photo = name)          -- respeta la RLS de actions
-    or exists(select 1 from public.profiles p where p.avatar = name)
-    or exists(select 1 from public.groups g where g.image = name)
+    (storage.foldername(objects.name))[1] = auth.uid()::text
+    or exists(select 1 from public.actions a where a.photo = objects.name)  -- respeta la RLS de actions
+    or exists(select 1 from public.profiles p where p.avatar = objects.name)
+    or exists(select 1 from public.groups g where g.image = objects.name)
   )
 );
