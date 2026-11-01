@@ -103,7 +103,9 @@ export function CaptureFlow({ draft, initialStep = 0, onDone }: { draft: Capture
               <label htmlFor="desc">Descripción (opcional)</label>
               <input id="desc" className="input" value={description} maxLength={280} onChange={(e) => setDescription(e.target.value)} placeholder={pillarId ? `Ej.: ${pillar(pillarId).examples[0]}` : '¿Qué has hecho?'} />
             </div>
-            <button className="btn block mt-l" disabled={!pillarId} onClick={() => setStep(1)}>Continuar</button>
+            <div className="sticky-cta">
+              <button className="btn block" disabled={!pillarId} onClick={() => setStep(1)}>Continuar</button>
+            </div>
           </>
         )}
 
@@ -132,7 +134,9 @@ export function CaptureFlow({ draft, initialStep = 0, onDone }: { draft: Capture
               <div className="grow"><b style={{ fontSize: 14 }}>Compartir mi emoción</b><p className="subtle">Por defecto, tus emociones y reflexiones son solo tuyas.</p></div>
               <Switch checked={shareEmotion} onChange={setShareEmotion} label="Compartir emoción" />
             </div>
-            <button className="btn block mt" onClick={() => setStep(2)}>{emotionId ? 'Continuar' : 'Omitir'}</button>
+            <div className="sticky-cta">
+              <button className="btn block" onClick={() => setStep(2)}>{emotionId ? 'Continuar' : 'Omitir'}</button>
+            </div>
           </>
         )}
 
@@ -173,7 +177,9 @@ export function CaptureFlow({ draft, initialStep = 0, onDone }: { draft: Capture
                 <Switch checked={keepDate} onChange={setKeepDate} label="Mostrar fecha original" />
               </div>
             )}
-            <button className="btn block mt" onClick={save} disabled={busy || (visibility === 'groups' && !groupIds.length)}>{busy ? 'Guardando…' : 'Guardar'}</button>
+            <div className="sticky-cta">
+              <button className="btn block" onClick={save} disabled={busy || (visibility === 'groups' && !groupIds.length)}>{busy ? 'Guardando…' : 'Guardar'}</button>
+            </div>
           </>
         )}
       </div>

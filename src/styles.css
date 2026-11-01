@@ -48,6 +48,7 @@ p { margin: 0; }
   width: 100%;
   max-width: 440px;
   height: 100%;
+  height: 100dvh; /* en móvil, la altura visible real (sin la barra del navegador) */
   margin: 0 auto;
   background: var(--bg);
   overflow: hidden;
@@ -313,6 +314,11 @@ p { margin: 0; }
 .emotion-btn svg { transition: transform .15s; }
 .emotion-btn.on svg { transform: scale(1.12); }
 .emotion-btn.on { color: var(--ink); }
+.sticky-cta {
+  position: sticky; bottom: 0; z-index: 5;
+  margin: 16px -18px 0; padding: 14px 18px calc(14px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(247, 251, 254, 0), var(--bg) 30%);
+}
 .vis-option { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: var(--radius-sm); border: 2px solid var(--line); background: #fff; width: 100%; text-align: left; }
 .vis-option.on { border-color: var(--sky); background: var(--sky-light); }
 .steps { display: flex; gap: 6px; justify-content: center; margin-bottom: 14px; }
