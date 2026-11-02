@@ -66,7 +66,7 @@ export function TrackingScreen() {
         {PERIODS.map((p) => <button key={p.id} className={periodId === p.id ? 'on' : ''} onClick={() => setPeriodId(p.id)}>{p.label}</button>)}
       </div>
 
-      <div className="card row mt" style={{ gap: 14 }}>
+      <div className="card score-card mt">
         <Ring value={score.score} size={136} stroke={13}>
           <b>{score.score}%</b>
           <span>{periodId === 'week' ? 'de tu objetivo semanal' : 'índice de constancia'}</span>
@@ -235,7 +235,7 @@ export function PillarDetail({ id }: { id: PillarId }) {
         </div>
       </div>
 
-      <div className="stat-grid mt" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+      <div className="stat-grid mt" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
         <div className="stat"><b>{sc.count}</b><span>Acciones</span></div>
         <div className="stat"><b>{sc.activeDays}</b><span>Días activos</span></div>
         <div className="stat"><b>{run}</b><span>Días seguidos</span></div>
@@ -285,7 +285,7 @@ export function PillarDetail({ id }: { id: PillarId }) {
 
       <div className="h-section">Tus fotos</div>
       {acts.length ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 6 }}>
           {acts.slice(0, 12).map((a) => <div key={a.id} className="photo-wrap" style={{ aspectRatio: '1', borderRadius: 12 }}><Photo src={a.photo} /></div>)}
         </div>
       ) : (

@@ -76,7 +76,7 @@ p { margin: 0; }
   padding: 18px 0 12px;
   min-height: 64px;
 }
-.topbar h1 { font-size: 22px; font-weight: 800; color: var(--ink); flex: 1; display: flex; align-items: center; gap: 8px; }
+.topbar h1 { font-size: clamp(19px, 6vw, 22px); font-weight: 800; color: var(--ink); flex: 1; display: flex; align-items: center; gap: 8px; }
 .topbar .title-center { text-align: center; }
 .icon-btn {
   width: 40px; height: 40px; border-radius: 50%;
@@ -267,14 +267,17 @@ p { margin: 0; }
   transition: opacity .6s ease;
 }
 .splash.out { opacity: 0; pointer-events: none; }
-.splash .brand { font-size: 40px; font-weight: 900; color: var(--sky-deep); letter-spacing: -0.5px; margin-top: 12px; }
+.splash .brand { font-size: clamp(30px, 10vw, 40px); font-weight: 900; color: var(--sky-deep); letter-spacing: -0.5px; margin-top: 12px; }
 .splash .brand span { color: var(--sky); }
 .splash .tag { color: var(--ink-2); font-weight: 600; }
-.waves { position: absolute; left: 0; right: 0; bottom: 0; height: 140px; }
+.waves { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 140px; }
 
 /* ---- Cámara ------------------------------------------------------------------- */
 
-.viewfinder { position: relative; border-radius: 26px; overflow: hidden; background: #1d2a35; aspect-ratio: 4 / 5; box-shadow: var(--shadow-lg); }
+.viewfinder { position: relative; border-radius: 26px; overflow: hidden; background: #1d2a35; aspect-ratio: 4 / 5;
+  /* En pantallas bajas el visor se encoge para que el disparador quepa sin hacer scroll. */
+  width: 100%;
+  max-height: max(200px, calc(100dvh - 330px)); box-shadow: var(--shadow-lg); }
 .viewfinder video, .viewfinder img { width: 100%; height: 100%; object-fit: cover; }
 .viewfinder .vf-overlay { position: absolute; inset: 0; pointer-events: none; }
 .viewfinder .corner { position: absolute; width: 28px; height: 28px; border: 3px solid rgba(255,255,255,.85); }
@@ -335,7 +338,7 @@ p { margin: 0; }
 .score-ring .val { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .score-ring .val b { font-size: 34px; font-weight: 900; color: var(--ink); }
 .score-ring .val span { font-size: 11px; color: var(--ink-2); font-weight: 700; text-align: center; line-height: 1.2; max-width: 90px; }
-.stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.stat-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .stat { background: #fff; border-radius: var(--radius-sm); padding: 12px; box-shadow: var(--shadow); }
 .stat b { display: block; font-size: 22px; font-weight: 900; }
 .stat span { font-size: 12px; color: var(--ink-2); font-weight: 700; }
@@ -392,7 +395,7 @@ p { margin: 0; }
 /* ---- Grupo ------------------------------------------------------------------- */
 
 .streak-card { display: flex; align-items: center; gap: 14px; background: linear-gradient(135deg, #fff6ec, #ffffff); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
-.streak-card .big { font-size: 34px; font-weight: 900; color: var(--ink); line-height: 1; }
+.streak-card .big { white-space: nowrap; font-size: clamp(26px, 9vw, 34px); font-weight: 900; color: var(--ink); line-height: 1; }
 .member-dot { position: relative; }
 .member-dot .ok { position: absolute; right: -2px; bottom: -2px; width: 18px; height: 18px; border-radius: 50%; background: var(--ok); color: #fff; display: grid; place-items: center; border: 2px solid #fff; }
 .member-dot .rest { background: #b9a9f0; }
@@ -427,12 +430,12 @@ p { margin: 0; }
 /* ---- Onboarding --------------------------------------------------------------- */
 
 .auth { min-height: 100%; display: flex; flex-direction: column; padding: 28px 22px; gap: 16px; background: linear-gradient(180deg, #fff, var(--sky-light)); overflow-y: auto; }
-.auth h1 { font-size: 28px; font-weight: 900; }
+.auth h1 { font-size: clamp(23px, 7.5vw, 28px); font-weight: 900; }
 .dots { display: flex; gap: 6px; justify-content: center; }
 .dots i { width: 8px; height: 8px; border-radius: 99px; background: #cfe6f5; transition: width .2s; }
 .dots i.on { width: 22px; background: var(--sky); }
-.interest-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.interest { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: var(--radius-sm); background: #fff; border: 2px solid transparent; box-shadow: var(--shadow); text-align: left; font-weight: 700; font-size: 13px; }
+.interest-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.interest { min-width: 0; overflow-wrap: break-word; hyphens: auto; display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: var(--radius-sm); background: #fff; border: 2px solid transparent; box-shadow: var(--shadow); text-align: left; font-weight: 700; font-size: 13px; }
 .interest.on { border-color: var(--sky); background: var(--sky-light); }
 
 /* ---- Galería de pantallas ------------------------------------------------------ */
@@ -449,3 +452,32 @@ p { margin: 0; }
 .statusbar { height: 30px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; font-size: 12px; font-weight: 800; color: var(--ink); }
 .zoom-overlay { position: fixed; inset: 0; background: rgba(36,55,70,.55); z-index: 200; display: grid; place-items: center; padding: 20px; }
 .zoom-overlay .app { height: min(820px, calc(100vh - 80px)); width: 390px; border-radius: 34px; box-shadow: var(--shadow-lg); }
+
+/* ---- Adaptación a móviles pequeños --------------------------------------------- */
+
+.nowrap { white-space: nowrap; }
+.score-card { display: flex; align-items: center; gap: 14px; }
+
+@media (max-width: 359px) {
+  .score-card { flex-direction: column; text-align: center; }
+  .score-card .score-ring { width: 120px !important; height: 120px !important; }
+  .score-card .score-ring svg { width: 120px; height: 120px; }
+  .score-ring .val b { font-size: 28px; }
+  .stat b { font-size: 19px; }
+  .profile-stats b { font-size: 17px; }
+  .option-grid { gap: 12px 2px; }
+  .option .pillar-badge { width: 48px; height: 48px; }
+  .tab { font-size: 10px; }
+  .segmented button { font-size: 12px; }
+  .badge-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .interest-grid { grid-template-columns: minmax(0, 1fr); }
+  .streak-card .slogan { display: none; }
+}
+
+@media (max-height: 640px) {
+  .capture-hero { min-height: 170px; }
+  .shutter { width: 70px; height: 70px; }
+  .side-btn { width: 46px; height: 46px; }
+  .shutter-row { margin-top: 12px; }
+  .lesson-body { justify-content: flex-start; }
+}

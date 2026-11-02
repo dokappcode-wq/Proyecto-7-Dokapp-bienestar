@@ -85,7 +85,7 @@ export function Ring({ value, size = 150, stroke = 14, color = 'var(--sky)', chi
   const c = 2 * Math.PI * r;
   return (
     <div className="score-ring" style={{ width: size, height: size }}>
-      <svg width={size} height={size}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         <circle cx={size / 2} cy={size / 2} r={r} stroke="#E6F1F8" strokeWidth={stroke} fill="none" />
         <circle
           cx={size / 2} cy={size / 2} r={r} stroke={color} strokeWidth={stroke} fill="none" strokeLinecap="round"

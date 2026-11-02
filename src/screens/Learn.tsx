@@ -59,7 +59,7 @@ export function LearnScreen() {
                 <button key={p.id} className="path-card" onClick={() => router.navigate(`/aprende/${p.id}`)}>
                   <PillarBadge id={p.id} />
                   <span className="grow col" style={{ gap: 4 }}>
-                    <span className="row between"><b style={{ fontSize: 14 }}>{p.name}</b><span className="small subtle">Nv. {ps.level}</span></span>
+                    <span className="row between"><b style={{ fontSize: 14 }}>{p.name}</b><span className="small subtle nowrap">Nv. {ps.level}</span></span>
                     <span className="subtle small ellipsis">{p.tagline}</span>
                     <Bar value={(ps.completed / ps.total) * 100} color={p.color} height={6} />
                   </span>

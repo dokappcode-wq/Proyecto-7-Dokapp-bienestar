@@ -129,10 +129,10 @@ export function CameraScreen() {
       <div className="card tight row between mt" style={{ padding: '10px 14px' }}>
         <div className="row gap-s">
           <Icon name="sun" size={20} style={{ color: '#F5A524' }} />
-          <b style={{ fontSize: 15 }}>Tu acción del día</b>
+          <b className="nowrap" style={{ fontSize: 15 }}>Tu acción del día</b>
         </div>
         <div className="col" style={{ gap: 4, alignItems: 'flex-end' }}>
-          <span className="small bold" style={{ color: 'var(--sky-deep)' }}>{done} de {MAX_DAILY_ACTIONS} acciones de hoy</span>
+          <span className="small bold nowrap" style={{ color: 'var(--sky-deep)' }}>{done} de {MAX_DAILY_ACTIONS} hoy</span>
           <span className="counter-dots">{Array.from({ length: MAX_DAILY_ACTIONS }, (_, i) => <i key={i} className={i < done ? 'on' : ''} />)}</span>
         </div>
       </div>

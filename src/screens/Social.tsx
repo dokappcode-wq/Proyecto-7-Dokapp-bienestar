@@ -332,10 +332,10 @@ export function GroupScreen({ id }: { id: string }) {
       <div className="streak-card mt">
         <span style={{ fontSize: 42 }} aria-hidden="true">🔥</span>
         <div className="grow">
-          <p className="small bold muted">Racha del grupo</p>
+          <p className="small bold muted nowrap">Racha del grupo</p>
           <span className="big">{st.current} días</span>
         </div>
-        <span className="small bold" style={{ color: 'var(--flame)' }}>{st.current >= 3 ? '¡Vamos equipo!' : '¡A por ella!'}</span>
+        <span className="small bold slogan" style={{ color: 'var(--flame)', textAlign: 'right' }}>{st.current >= 3 ? '¡Vamos equipo!' : '¡A por ella!'}</span>
       </div>
 
       <div className="card mt">
@@ -376,7 +376,7 @@ export function GroupScreen({ id }: { id: string }) {
         {!topPillars.length && <p className="subtle">Aún no hay actividad esta semana.</p>}
       </div>
 
-      <div className="stat-grid mt" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+      <div className="stat-grid mt" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
         <div className="stat"><b>{allTimeTotal}</b><span>Acciones totales</span></div>
         <div className="stat"><b>{activeDays}</b><span>Días de actividad</span></div>
         <div className="stat"><b>{st.best}</b><span>Mejor racha</span></div>
@@ -514,7 +514,7 @@ export function UserScreen({ id }: { id: string }) {
           <div className="chips">{[...pillarsShared].map((x) => <span key={x} className="chip"><PillarBadge id={x} size="sm" />{pillar(x).short}</span>)}</div>
           <div className="h-section">Acciones</div>
           {acts.length ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 6 }}>
               {acts.slice(0, 30).map((a) => <div key={a.id} className="photo-wrap" style={{ aspectRatio: '1', borderRadius: 12 }}><Photo src={a.photo} alt={a.description} /></div>)}
             </div>
           ) : <p className="subtle">Aún no ha compartido acciones contigo.</p>}
