@@ -543,14 +543,30 @@ async function serveStatic(req, res) {
   res.end(body);
 }
 
+// Orígenes aceptados: el propio servidor, la web de Netlify que reenvía /api/* aquí
+// (proxy de _redirects) y los que se indiquen en ALLOWED_ORIGINS (separados por comas).
+// La cookie de sesión es SameSite=Lax, así que otra web no puede usar la sesión de nadie.
+const EXTRA_ORIGINS = (process.env.ALLOWED_ORIGINS ?? '').split(',').map((o) => o.trim()).filter(Boolean);
+function originAllowed(req) {
+  let origin;
+  try {
+    origin = new URL(req.headers.origin);
+  } catch {
+    return false;
+  }
+  if (origin.host === req.headers.host || origin.host === req.headers['x-forwarded-host']) return true;
+  if (EXTRA_ORIGINS.includes(origin.origin)) return true;
+  return origin.protocol === 'https:' && origin.hostname.endsWith('.netlify.app');
+}
+
 const server = createServer(async (req, res) => {
   const path = new URL(req.url, 'http://x').pathname;
   try {
     if (!path.startsWith('/api/')) return await serveStatic(req, res);
     if (path === '/api/health') return sendJson(res, 200, { ok: true });
 
-    // Defensa CSRF: las peticiones que modifican datos deben venir del mismo origen.
-    if (req.method !== 'GET' && req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) fail('Origen no permitido.', 403);
+    // Defensa CSRF: las peticiones que modifican datos deben venir de Dokapp.
+    if (req.method !== 'GET' && req.headers.origin && !originAllowed(req)) fail('Origen no permitido.', 403);
 
     const authMatch = /^\/api\/auth\/(signup|login|logout)$/.exec(path);
     if (authMatch && req.method === 'POST') return sendJson(res, 200, await auth[authMatch[1]](await readJson(req), res, req));
