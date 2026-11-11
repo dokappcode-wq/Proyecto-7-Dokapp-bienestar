@@ -10,6 +10,7 @@ import { SupabaseBackend } from './data/supabaseBackend';
 import { Gallery } from './Gallery';
 import { browserKV, MemoryKV } from './lib/kv';
 import { createPhotoStore, MemoryPhotoStore } from './lib/photoStore';
+import { registerServiceWorker } from './lib/pwa';
 import { useHashRouter } from './state/app';
 
 function createBackend(): Backend {
@@ -34,6 +35,8 @@ function Root() {
 
 // La versión de un solo archivo (vista previa) abre por defecto en la galería de pantallas.
 if (import.meta.env.MODE === 'single' && !window.location.hash) window.location.replace('#/galeria');
+
+registerServiceWorker();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { Icon } from '../components/Icon';
+import { InstallApp } from '../components/InstallApp';
 import { Turtle, TurtlePose } from '../components/Turtle';
 import { useApp } from '../state/app';
 
@@ -31,6 +32,7 @@ export function Welcome({ initialSlide = 0 }: { initialSlide?: number }) {
         ) : (
           <button className="btn block" onClick={() => router.navigate('/registro')}>Crear mi cuenta</button>
         )}
+        <InstallApp variant="button" />
         <p className="subtle center">Pequeñas acciones. Grandes cambios.</p>
       </div>
     </div>

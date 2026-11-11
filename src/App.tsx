@@ -1,5 +1,7 @@
 import { ReactElement, useEffect, useState } from 'react';
+import { OfflineBanner } from './components/InstallApp';
 import { TabBar } from './components/TabBar';
+import { useOnline } from './lib/pwa';
 import { Turtle } from './components/Turtle';
 import { Loading, StatusBar } from './components/ui';
 import type { Backend } from './data/backend';
@@ -41,8 +43,8 @@ function Routes() {
     return (
       <div className="auth" style={{ justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
         <Turtle pose="rest" size={140} />
-        <h1>No hemos podido cargar tus datos</h1>
-        <p className="muted">Comprueba tu conexión e inténtalo de nuevo.</p>
+        <h1>{navigator.onLine ? 'No hemos podido cargar tus datos' : 'Estás sin conexión'}</h1>
+        <p className="muted">{navigator.onLine ? 'Comprueba tu conexión e inténtalo de nuevo.' : 'Dokapp necesita internet para mostrar tus datos. Se cargará sola en cuanto vuelvas a conectarte.'}</p>
         <button className="btn" onClick={() => window.location.reload()}>Reintentar</button>
       </div>
     );
@@ -111,7 +113,8 @@ function Routes() {
 }
 
 function Shell({ splash, statusBar }: { splash: boolean; statusBar: boolean }) {
-  const { status } = useApp();
+  const { status, backend } = useApp();
+  const online = useOnline();
   const [phase, setPhase] = useState<'show' | 'leaving' | 'gone'>(splash ? 'show' : 'gone');
   useEffect(() => {
     if (phase !== 'show' || status === 'boot') return;
@@ -125,6 +128,7 @@ function Shell({ splash, statusBar }: { splash: boolean; statusBar: boolean }) {
   return (
     <>
       {statusBar && <StatusBar />}
+      {(backend.kind === 'api' || backend.kind === 'supabase') && <OfflineBanner online={online} />}
       <div style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         <Routes />
       </div>

@@ -66,3 +66,13 @@ Para probar la red social, crea una segunda cuenta en otro navegador o en el mó
 - **Netlify**: 100 GB de transferencia al mes.
 
 Para un grupo de amistades o un piloto es más que suficiente.
+
+## Instalar Dokapp en el móvil
+
+Dokapp es una app instalable (PWA): se instala desde su propia dirección web, sin tiendas de aplicaciones, y siempre trabaja con los datos del servidor.
+
+- **Android (Chrome)**: abre la dirección de Dokapp y pulsa **Instalar la app** (en la bienvenida, en tu Perfil o en Ajustes). También desde el menú ⋮ → **Instalar aplicación**.
+- **iPhone (Safari)**: botón **Compartir** → **Añadir a pantalla de inicio** → **Añadir**. Dokapp muestra estos pasos al pulsar **Instalar la app**.
+- **Ordenador (Chrome o Edge)**: icono de instalar en la barra de direcciones.
+
+La app instalada solo guarda en el móvil su diseño (para abrir rápido). Cuentas, fotos y publicaciones se piden siempre al servidor, se recargan al volver a la app y cada minuto, y si no hay internet aparece un aviso.

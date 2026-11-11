@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { MonthCalendar } from '../components/charts';
 import { Icon, IconKey } from '../components/Icon';
+import { InstallApp } from '../components/InstallApp';
 import { Turtle } from '../components/Turtle';
 import { Avatar, Bar, EmotionFace, Photo, PillarBadge, Sheet, Switch, TopBar } from '../components/ui';
 import { uid } from '../data/backend';
@@ -48,6 +49,7 @@ export function ProfileScreen() {
         </div>
         <button className="btn soft block mt" onClick={() => router.navigate('/perfil/editar')}>Editar perfil</button>
       </div>
+      <InstallApp />
 
       <div className="h-section"><span>Tu calendario</span><button className="link" onClick={() => router.navigate('/perfil/calendario')}>Ver mes</button></div>
       <button className="card" style={{ width: '100%' }} onClick={() => router.navigate('/perfil/calendario')}>
@@ -344,6 +346,8 @@ export function SettingsScreen() {
           <Switch checked={s.settings.remindersEnabled} onChange={(v) => set({ remindersEnabled: v })} label="Recordatorios" />
         </div>
       </div>
+
+      <div className="list mt"><InstallApp variant="row" /></div>
 
       <div className="h-section">Tus datos (RGPD)</div>
       <div className="list">

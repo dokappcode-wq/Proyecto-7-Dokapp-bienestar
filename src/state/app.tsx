@@ -70,7 +70,7 @@ export interface AppState {
   snap: Snapshot | null;
   /** Vista previa estática (galería): sin cámara real ni animaciones largas. */
   preview: boolean;
-  refresh(): Promise<void>;
+  refresh(silent?: boolean): Promise<void>;
   /** Ejecuta una mutación, recarga los datos y muestra los errores de forma amable. */
   run<T>(fn: (b: Backend) => Promise<T>, success?: string): Promise<T | undefined>;
   toast(text: string, kind?: 'info' | 'error'): void;
@@ -90,19 +90,27 @@ export function AppProvider({ backend, router, preview = false, children }: { ba
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3200);
   }, []);
 
-  const refresh = useCallback(async () => {
+  const hasData = useRef(false);
+
+  /** Recarga los datos. En modo silencioso (recargas automáticas) un fallo no interrumpe a la persona. */
+  const refresh = useCallback(async (silent = false) => {
     try {
       const me = await backend.currentUserId();
       if (!me) {
+        hasData.current = false;
         setSnap(null);
         setStatus('anon');
         return;
       }
       setSnap(await backend.load());
+      hasData.current = true;
       setStatus('ready');
     } catch (e) {
-      toast((e as Error).message, 'error');
-      setStatus('error');
+      if (silent) return;
+      // Sin internet ya se muestra un aviso fijo: no se repite con otro mensaje.
+      if (navigator.onLine) toast((e as Error).message, 'error');
+      // Si ya había datos, se mantienen en pantalla en lugar de mostrar la pantalla de error.
+      if (!hasData.current) setStatus('error');
     }
   }, [backend, toast]);
 
@@ -110,10 +118,26 @@ export function AppProvider({ backend, router, preview = false, children }: { ba
     refresh();
   }, [refresh]);
 
+  // Conexión permanente con el servidor: recarga al volver a la app, al recuperar internet y cada minuto.
+  useEffect(() => {
+    if (backend.kind !== 'api' && backend.kind !== 'supabase') return;
+    const visible = () => document.visibilityState === 'visible';
+    const onVisible = () => visible() && refresh(true);
+    const onOnline = () => refresh(true);
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('online', onOnline);
+    const timer = setInterval(() => visible() && navigator.onLine && refresh(true), 60_000);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('online', onOnline);
+      clearInterval(timer);
+    };
+  }, [backend, refresh]);
+
   const run = useCallback(async <T,>(fn: (b: Backend) => Promise<T>, success?: string) => {
     try {
       const r = await fn(backend);
-      await refresh();
+      await refresh(true);
       if (success) toast(success);
       return r;
     } catch (e) {
