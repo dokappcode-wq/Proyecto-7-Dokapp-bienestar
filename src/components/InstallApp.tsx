@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { useInstall } from '../lib/pwa';
 import { useApp } from '../state/app';
 import { Icon } from './Icon';
@@ -9,24 +9,62 @@ import { Sheet } from './ui';
 export function InstallApp({ variant = 'card' }: { variant?: 'card' | 'button' | 'row' }) {
   const { toast, preview, backend } = useApp();
   const inst = useInstall();
-  const [iosOpen, setIosOpen] = useState(false);
-  if (preview || backend.kind === 'demo' || inst.installed || (!inst.canPrompt && !inst.needsIOSSteps)) return null;
+  const [stepsOpen, setStepsOpen] = useState(false);
+  // El botón sale siempre que la app no esté instalada: si el navegador no deja instalar
+  // con un toque, se muestran los pasos para este dispositivo.
+  if (preview || backend.kind === 'demo' || inst.installed) return null;
 
   const go = async () => {
     if (inst.canPrompt) {
       if (await inst.install()) toast('¡Dokapp instalada! Ya la tienes en tu pantalla de inicio 🐢');
-    } else setIosOpen(true);
+    } else setStepsOpen(true);
   };
 
+  const STEPS: Record<typeof inst.platform, { title: string; items: ReactNode[]; note?: string }> = {
+    ios: {
+      title: 'Instalar Dokapp en tu iPhone',
+      items: [
+        <>Abre esta página en <b>Safari</b> (en iOS 16.4 o posterior también vale Chrome).</>,
+        <>Pulsa <b>Compartir</b> <Icon name="share" size={16} style={{ verticalAlign: 'text-bottom' }} /> en la barra de abajo (o arriba en iPad).</>,
+        <>Baja y elige <b>«Añadir a pantalla de inicio»</b>, y pulsa <b>Añadir</b>.</>,
+      ],
+    },
+    android: {
+      title: 'Instalar Dokapp en tu Android',
+      items: [
+        <>Abre esta página en <b>Chrome</b>.</>,
+        <>Pulsa el menú <b>⋮</b> arriba a la derecha.</>,
+        <>Elige <b>«Instalar aplicación»</b> o <b>«Añadir a pantalla de inicio»</b>, y confirma.</>,
+      ],
+      note: 'En Samsung Internet: menú ☰ → «Añadir página a» → «Pantalla de inicio».',
+    },
+    desktop: {
+      title: 'Instalar Dokapp en tu ordenador',
+      items: [
+        <>Abre esta página en <b>Chrome</b> o <b>Edge</b>.</>,
+        <>Pulsa el icono de instalar <Icon name="download" size={16} style={{ verticalAlign: 'text-bottom' }} /> a la derecha de la barra de direcciones, o el menú <b>⋮</b> → <b>«Instalar Dokapp»</b>.</>,
+      ],
+      note: 'Safari en Mac: menú Archivo → «Añadir al Dock».',
+    },
+    inapp: {
+      title: 'Ábrela en tu navegador',
+      items: [
+        <>Estás viendo Dokapp dentro de otra app (WhatsApp, Instagram…), que no permite instalar.</>,
+        <>Pulsa el menú <b>⋮</b> o <b>…</b> y elige <b>«Abrir en el navegador»</b> (Chrome o Safari).</>,
+        <>Allí, pulsa de nuevo <b>Instalar la app</b>.</>,
+      ],
+    },
+  };
+  const info = STEPS[inst.platform];
+
   const steps = (
-    <Sheet open={iosOpen} onClose={() => setIosOpen(false)} title="Instalar Dokapp en tu iPhone">
+    <Sheet open={stepsOpen} onClose={() => setStepsOpen(false)} title={info.title}>
       <ol className="col" style={{ paddingLeft: 20, margin: 0, gap: 12, fontSize: 15 }}>
-        <li>Abre Dokapp en <b>Safari</b>.</li>
-        <li>Pulsa el botón <b>Compartir</b> <Icon name="share" size={16} style={{ verticalAlign: 'text-bottom' }} /> en la barra inferior.</li>
-        <li>Elige <b>«Añadir a pantalla de inicio»</b> y pulsa <b>Añadir</b>.</li>
+        {info.items.map((it, i) => <li key={i}>{it}</li>)}
       </ol>
+      {info.note && <p className="hint mt">{info.note}</p>}
       <p className="hint mt">Se abrirá a pantalla completa, como una app más, y seguirá conectada a tu cuenta.</p>
-      <button className="btn block mt" onClick={() => setIosOpen(false)}>Entendido</button>
+      <button className="btn block mt" onClick={() => setStepsOpen(false)}>Entendido</button>
     </Sheet>
   );
 

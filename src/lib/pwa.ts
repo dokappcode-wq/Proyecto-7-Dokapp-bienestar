@@ -39,6 +39,19 @@ export const isStandalone = () =>
 
 export const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
+export type InstallPlatform = 'ios' | 'android' | 'desktop' | 'inapp';
+
+/** Navegadores dentro de otras apps (WhatsApp, Instagram, Facebook…): no permiten instalar. */
+const IN_APP = /FBAN|FBAV|FB_IAB|Instagram|Line\/|WhatsApp|Snapchat|TikTok|musical_ly|; wv\)|GSA\//i;
+
+export function installPlatform(): InstallPlatform {
+  const ua = navigator.userAgent;
+  if (IN_APP.test(ua)) return 'inapp';
+  if (isIOS()) return 'ios';
+  if (/android/i.test(ua)) return 'android';
+  return 'desktop';
+}
+
 export function useInstall() {
   const [, force] = useState(0);
   useEffect(() => {
@@ -51,10 +64,10 @@ export function useInstall() {
   const installed = isStandalone();
   return {
     installed,
-    /** Android y ordenador: el navegador permite instalar con un toque. */
+    /** El navegador permite instalar con un toque (Chrome/Edge en Android y ordenador). */
     canPrompt: !installed && deferred !== null,
-    /** iPhone/iPad: hay que hacerlo desde el menú Compartir de Safari. */
-    needsIOSSteps: !installed && deferred === null && isIOS(),
+    /** Si no, se muestran los pasos para este dispositivo. */
+    platform: installPlatform(),
     async install() {
       if (!deferred) return false;
       await deferred.prompt();
