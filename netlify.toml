@@ -1,0 +1,8 @@
+# Netlify compila la web conectada al servidor de Render.
+# Solo hay que definir la variable RENDER_URL en Netlify (Site configuration → Environment variables).
+[build]
+  command = "npm ci --include=dev && node scripts/build-netlify.mjs"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"

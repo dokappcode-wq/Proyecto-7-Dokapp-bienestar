@@ -5,9 +5,10 @@
 import { execSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 
-const api = (process.argv[2] ?? '').replace(/\/+$/, '');
+// La dirección puede venir como argumento o en la variable RENDER_URL (configurada en Netlify).
+const api = (process.argv[2] ?? process.env.RENDER_URL ?? '').trim().replace(/\/+$/, '');
 if (!/^https:\/\/[a-z0-9.-]+$/i.test(api)) {
-  console.error('Indica la dirección del servidor, p. ej.: node scripts/build-netlify.mjs https://dokapp.onrender.com');
+  console.error('Falta la dirección del servidor de Render: define RENDER_URL (p. ej. https://dokapp.onrender.com) en Netlify → Site configuration → Environment variables.');
   process.exit(1);
 }
 execSync('npx tsc --noEmit && npx vite build', { stdio: 'inherit', env: { ...process.env, VITE_BACKEND: 'api' } });
