@@ -5,7 +5,7 @@ import type {
   Goal, Group, GroupMember, JournalEntry, LessonProgress, NewActionInput, Profile, Settings, Snapshot, WellnessAction,
 } from '../domain/types';
 import { resolveStaticRef } from '../lib/scenes';
-import { Backend, BackendError, NewGroupInput } from './backend';
+import { Backend, BackendError, GroupPatch, NewGroupInput } from './backend';
 import { defaultSettings } from './seed';
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -110,8 +110,20 @@ export class ApiBackend implements Backend {
   leaveGroup(groupId: string) {
     return this.call('leaveGroup', groupId);
   }
-  updateGroup(groupId: string, patch: Partial<Pick<Group, 'name' | 'description' | 'weeklyGoal' | 'restWeekdays'>>) {
-    return this.call('updateGroup', groupId, patch);
+  async updateGroup(groupId: string, patch: GroupPatch) {
+    const { image, ...rest } = patch;
+    const body: Record<string, unknown> = { ...rest };
+    if (image !== undefined) body.image = typeof image === 'string' ? image : await this.upload(image);
+    await this.call('updateGroup', groupId, body);
+  }
+  setMemberRole(groupId: string, userId: string, role: 'admin' | 'member') {
+    return this.call('setMemberRole', groupId, userId, role);
+  }
+  removeMember(groupId: string, userId: string) {
+    return this.call('removeMember', groupId, userId);
+  }
+  newInviteCode(groupId: string) {
+    return this.call<string>('newInviteCode', groupId);
   }
   updateMembership(groupId: string, patch: Partial<Pick<GroupMember, 'pauseFrom' | 'pauseUntil' | 'pauseReason' | 'shareMetrics'>>) {
     return this.call('updateMembership', groupId, patch);

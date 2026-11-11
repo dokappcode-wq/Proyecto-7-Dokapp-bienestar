@@ -7,7 +7,7 @@ import type {
   Goal, Group, GroupMember, JournalEntry, LessonProgress, NewActionInput, Profile, Settings, Snapshot, WellnessAction,
 } from '../domain/types';
 import { resolveStaticRef } from '../lib/scenes';
-import { Backend, BackendError, NewGroupInput, uid } from './backend';
+import { Backend, BackendError, GroupPatch, NewGroupInput, inviteCode, uid } from './backend';
 import { defaultSettings } from './seed';
 
 type Row = Record<string, any>;
@@ -19,7 +19,7 @@ const toProfile = (r: Row): Profile => ({
 
 const toGroup = (r: Row): Group => ({
   id: r.id, name: r.name, description: r.description, image: r.image, inviteCode: r.invite_code, createdBy: r.created_by,
-  createdAt: r.created_at, weeklyGoal: r.weekly_goal, restWeekdays: r.rest_weekdays ?? [],
+  createdAt: r.created_at, weeklyGoal: r.weekly_goal, dailyGoal: r.daily_goal ?? 0, restWeekdays: r.rest_weekdays ?? [],
 });
 
 const toMember = (r: Row): GroupMember => ({
@@ -240,7 +240,7 @@ export class SupabaseBackend implements Backend {
     const image = typeof input.image === 'string' ? input.image : await this.upload(input.image);
     const row = must(await this.sb.from('groups').insert({
       name: input.name.trim(), description: input.description.trim(), image, created_by: await this.me(),
-      weekly_goal: input.weeklyGoal, rest_weekdays: input.restWeekdays,
+      weekly_goal: input.weeklyGoal, daily_goal: input.dailyGoal, rest_weekdays: input.restWeekdays,
     }).select().single()) as Row;
     return toGroup(row);
   }
@@ -254,13 +254,29 @@ export class SupabaseBackend implements Backend {
     must(await this.sb.from('group_members').delete().eq('group_id', groupId).eq('user_id', await this.me()));
   }
 
-  async updateGroup(groupId: string, patch: Partial<Pick<Group, 'name' | 'description' | 'weeklyGoal' | 'restWeekdays'>>) {
+  async updateGroup(groupId: string, patch: GroupPatch) {
     const row: Row = {};
-    if (patch.name !== undefined) row.name = patch.name;
-    if (patch.description !== undefined) row.description = patch.description;
+    if (patch.name !== undefined) row.name = patch.name.trim();
+    if (patch.description !== undefined) row.description = patch.description.trim();
     if (patch.weeklyGoal !== undefined) row.weekly_goal = patch.weeklyGoal;
+    if (patch.dailyGoal !== undefined) row.daily_goal = patch.dailyGoal;
     if (patch.restWeekdays !== undefined) row.rest_weekdays = patch.restWeekdays;
+    if (patch.image !== undefined) row.image = typeof patch.image === 'string' ? patch.image : await this.upload(patch.image);
     must(await this.sb.from('groups').update(row).eq('id', groupId));
+  }
+
+  async setMemberRole(groupId: string, userId: string, role: 'admin' | 'member') {
+    must(await this.sb.from('group_members').update({ role }).eq('group_id', groupId).eq('user_id', userId));
+  }
+
+  async removeMember(groupId: string, userId: string) {
+    must(await this.sb.from('group_members').delete().eq('group_id', groupId).eq('user_id', userId));
+  }
+
+  async newInviteCode(groupId: string) {
+    const code = inviteCode();
+    must(await this.sb.from('groups').update({ invite_code: code }).eq('id', groupId));
+    return code;
   }
 
   async updateMembership(groupId: string, patch: Partial<Pick<GroupMember, 'pauseFrom' | 'pauseUntil' | 'pauseReason' | 'shareMetrics'>>) {

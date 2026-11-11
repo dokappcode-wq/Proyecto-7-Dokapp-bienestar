@@ -73,6 +73,7 @@ create table if not exists public.groups (
   rest_weekdays int[] not null default '{}',
   created_at timestamptz not null default now()
 );
+alter table public.groups add column if not exists daily_goal int not null default 0 check (daily_goal between 0 and 100);
 
 create table if not exists public.group_members (
   group_id uuid not null references public.groups on delete cascade,
@@ -326,6 +327,8 @@ drop policy if exists members_read on public.group_members;
 create policy members_read on public.group_members for select to authenticated using (group_id = any(public.my_group_ids()));
 drop policy if exists members_update_self on public.group_members;
 create policy members_update_self on public.group_members for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists members_admin_update on public.group_members;
+create policy members_admin_update on public.group_members for update to authenticated using (public.is_group_admin(group_id)) with check (public.is_group_admin(group_id));
 drop policy if exists members_leave on public.group_members;
 create policy members_leave on public.group_members for delete to authenticated using (user_id = auth.uid() or public.is_group_admin(group_id));
 

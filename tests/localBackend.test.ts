@@ -86,4 +86,44 @@ describe('LocalBackend', () => {
     expect(st.today.required).toHaveLength(8);
     expect(st.today.done).toHaveLength(7);
   });
+
+  it('solo la administración edita el grupo, sus objetivos y sus miembros', async () => {
+    const { b, kv } = await newUser();
+    const g = await b.createGroup({ name: 'Amigos', description: '', image: 'scene:bosque', weeklyGoal: 20, dailyGoal: 3, restWeekdays: [] });
+    await b.updateGroup(g.id, { name: '  Amigos de Doka ', weeklyGoal: 35, dailyGoal: 5, description: 'Nos cuidamos', image: 'scene:meditar', restWeekdays: [0] });
+    let s = await b.load();
+    let gg = s.groups.find((x) => x.id === g.id)!;
+    expect([gg.name, gg.weeklyGoal, gg.dailyGoal, gg.description, gg.image, gg.restWeekdays]).toEqual(['Amigos de Doka', 35, 5, 'Nos cuidamos', 'scene:meditar', [0]]);
+    const oldCode = gg.inviteCode;
+    const code = await b.newInviteCode(g.id);
+    expect(code).not.toBe(oldCode);
+    const anaId = s.me.id;
+
+    // Leo se une; no puede editar ni gestionar miembros.
+    await b.signOut();
+    const leo = new LocalBackend(kv, new MemoryPhotoStore());
+    await leo.signUp('leo@example.com', 'contraseña-segura');
+    await expect(leo.joinGroup(oldCode)).rejects.toThrow('código');
+    await leo.joinGroup(code);
+    const leoId = (await leo.load()).me.id;
+    await expect(leo.updateGroup(g.id, { dailyGoal: 50 })).rejects.toThrow('administradoras');
+    await expect(leo.removeMember(g.id, anaId)).rejects.toThrow('administradoras');
+
+    // Ana lo nombra administrador; ya puede editar. Después Ana lo saca del grupo.
+    await leo.signOut();
+    await b.signIn('ana@example.com', 'contraseña-segura');
+    await b.setMemberRole(g.id, leoId, 'admin');
+    await b.signOut();
+    await leo.signIn('leo@example.com', 'contraseña-segura');
+    await leo.updateGroup(g.id, { dailyGoal: 7 });
+    await leo.signOut();
+    await b.signIn('ana@example.com', 'contraseña-segura');
+    await b.removeMember(g.id, leoId);
+    s = await b.load();
+    gg = s.groups.find((x) => x.id === g.id)!;
+    expect(gg.dailyGoal).toBe(7);
+    expect(s.members.filter((m) => m.groupId === g.id).map((m) => m.userId)).toEqual([anaId]);
+    // No se puede dejar el grupo sin administración.
+    await expect(b.setMemberRole(g.id, anaId, 'member')).rejects.toThrow('al menos una');
+  });
 });

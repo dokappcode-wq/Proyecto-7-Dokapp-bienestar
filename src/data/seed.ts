@@ -216,7 +216,7 @@ export function seedCommunity(db: LocalDB, today: Date) {
   db.groups.push({
     id: DEMO_GROUP_ID, name: 'Los buenos hábitos', description: 'Un grupo para animarnos a cuidarnos un poquito cada día.',
     image: 'scene:sendero', inviteCode: 'DOKA-HABITOS', createdBy: 'u-marta', createdAt: addDays(today, -45).toISOString(),
-    weeklyGoal: 40, restWeekdays: [],
+    weeklyGoal: 40, dailyGoal: 8, restWeekdays: [],
   });
   GROUP_MEMBERS.forEach((u, i) => db.members.push({
     groupId: DEMO_GROUP_ID, userId: u, role: i === 0 ? 'admin' : 'member', joinedAt: addDays(today, -45).toISOString(),
@@ -225,7 +225,7 @@ export function seedCommunity(db: LocalDB, today: Date) {
   db.groups.push({
     id: 'g-reto-30', name: 'Reto bienestar 30 días', description: 'Treinta días, siete pilares. ¿Te apuntas?',
     image: 'scene:meditar', inviteCode: 'DOKA-RETO30', createdBy: 'u-lucia', createdAt: addDays(today, -20).toISOString(),
-    weeklyGoal: 25, restWeekdays: [0],
+    weeklyGoal: 25, dailyGoal: 4, restWeekdays: [0],
   });
   ['u-lucia', 'u-sara', 'u-carmen', 'u-hugo'].forEach((u, i) => db.members.push({
     groupId: 'g-reto-30', userId: u, role: i === 0 ? 'admin' : 'member', joinedAt: addDays(today, -20).toISOString(),

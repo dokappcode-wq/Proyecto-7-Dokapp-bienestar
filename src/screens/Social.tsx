@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { Turtle } from '../components/Turtle';
 import { Avatar, Bar, EmotionFace, Empty, Photo, PillarBadge, Sheet, Switch, TopBar } from '../components/ui';
 import { addDays, dayKey, formatShortDate, relativeTime, WEEKDAYS } from '../domain/dates';
 import { pillar } from '../domain/pillars';
 import { groupStreak } from '../domain/streaks';
-import type { PillarId, Profile, WellnessAction } from '../domain/types';
+import type { Group, PillarId, Profile, WellnessAction } from '../domain/types';
+import { compressImage } from '../lib/image';
 import { useApp, useData } from '../state/app';
 
 type Tab = 'feed' | 'personas' | 'grupos';
@@ -226,6 +227,7 @@ function Groups() {
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
   const [goal, setGoal] = useState(20);
+  const [daily, setDaily] = useState(3);
   const today = now();
 
   return (
@@ -245,7 +247,7 @@ function Groups() {
                 <div className="thumb"><Photo src={g.image || 'scene:sendero'} /></div>
                 <span className="grow">
                   <b style={{ fontSize: 15 }}>{g.name}</b><br />
-                  <span className="subtle">{count} miembros · {st.today.done.length} de {st.today.required.length} hoy</span>
+                  <span className="subtle">{count} {count === 1 ? 'miembro' : 'miembros'} · {st.today.done.length} de {st.today.required.length} hoy</span>
                 </span>
                 <span className="streak-pill"><Icon name="flame" size={15} /> {st.current}</span>
               </button>
@@ -260,10 +262,11 @@ function Groups() {
         <div className="col">
           <div className="field"><label htmlFor="gn">Nombre</label><input id="gn" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Amigos de Doka" maxLength={60} /></div>
           <div className="field"><label htmlFor="gd">Descripción</label><input id="gd" className="input" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Nos animamos a cuidarnos cada día" /></div>
-          <div className="field"><label>Objetivo común: {goal} acciones por semana</label><input type="range" min={5} max={100} step={5} value={goal} onChange={(e) => setGoal(Number(e.target.value))} /></div>
+          <div className="field"><label>Objetivo semanal: {goal} acciones del grupo</label><input type="range" min={5} max={100} step={5} value={goal} onChange={(e) => setGoal(Number(e.target.value))} /></div>
+          <div className="field"><label>Objetivo diario: {daily ? `${daily} acciones del grupo` : 'sin objetivo diario'}</label><input type="range" min={0} max={30} value={daily} onChange={(e) => setDaily(Number(e.target.value))} /></div>
           <p className="hint">Los grupos son privados: solo se entra con el código de invitación.</p>
           <button className="btn block" disabled={!name.trim()} onClick={async () => {
-            const g = await run((b) => b.createGroup({ name, description: desc, image: 'scene:bosque', weeklyGoal: goal, restWeekdays: [] }), 'Grupo creado');
+            const g = await run((b) => b.createGroup({ name, description: desc, image: 'scene:bosque', weeklyGoal: goal, dailyGoal: daily, restWeekdays: [] }), 'Grupo creado');
             if (g) {
               setCreate(false);
               setName('');
@@ -295,6 +298,8 @@ export function GroupScreen({ id }: { id: string }) {
   const { router, run, now, toast } = useApp();
   const { s, me, profiles } = useData();
   const [settings, setSettings] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [memberMenu, setMemberMenu] = useState<string | null>(null);
   const g = s.groups.find((x) => x.id === id);
   const today = now();
   if (!g) return <div className="screen no-tabs"><TopBar back="/social?tab=grupos" title="Grupo" /><Empty title="No encontramos este grupo" /></div>;
@@ -306,6 +311,7 @@ export function GroupScreen({ id }: { id: string }) {
   const since = dayKey(addDays(today, -6));
   const act = s.groupActivity.filter((a) => a.groupId === id && a.day >= since);
   const weekTotal = act.reduce((t, a) => t + a.count, 0);
+  const todayTotal = act.filter((a) => a.day === dayKey(today)).reduce((t, a) => t + a.count, 0);
   const pillarCounts = new Map<string, number>();
   for (const a of act) for (const p of a.pillars) pillarCounts.set(p, (pillarCounts.get(p) ?? 0) + 1);
   const pillarTotal = Math.max(1, ...pillarCounts.values());
@@ -325,7 +331,7 @@ export function GroupScreen({ id }: { id: string }) {
         <div className="thumb" style={{ width: 64, height: 64, borderRadius: 18 }}><Photo src={g.image || 'scene:sendero'} /></div>
         <div className="grow">
           <h2 style={{ fontSize: 20, fontWeight: 900 }}>{g.name}</h2>
-          <p className="subtle">{members.length} miembros{g.description ? ` · ${g.description}` : ''}</p>
+          <p className="subtle">{members.length} {members.length === 1 ? 'miembro' : 'miembros'}{g.description ? ` · ${g.description}` : ''}</p>
         </div>
       </div>
 
@@ -340,7 +346,7 @@ export function GroupScreen({ id }: { id: string }) {
 
       <div className="card mt">
         <p style={{ fontSize: 14, fontWeight: 700 }}>
-          {st.today.groupRest ? `Hoy es día de descanso del grupo (${WEEKDAYS[today.getDay()]}).` : `${st.today.done.length} de ${st.today.required.length} miembros han completado su acción de hoy.`}
+          {st.today.groupRest ? `Hoy es día de descanso del grupo (${WEEKDAYS[today.getDay()]}).` : st.today.required.length === 1 ? (st.today.done.length ? 'Has completado tu acción de hoy.' : 'Aún falta tu acción de hoy.') : `${st.today.done.length} de ${st.today.required.length} miembros han completado su acción de hoy.`}
         </p>
         <div className="row mt" style={{ flexWrap: 'wrap', gap: 10 }}>
           {members.map((m) => {
@@ -354,7 +360,7 @@ export function GroupScreen({ id }: { id: string }) {
             );
           })}
         </div>
-        {!st.today.complete && !st.today.groupRest && st.today.required.length - st.today.done.length === 1 && (
+        {!st.today.complete && !st.today.groupRest && st.today.required.length > 1 && st.today.required.length - st.today.done.length === 1 && (
           <p className="subtle small mt">¡Solo falta una persona! Un mensaje de ánimo puede ayudar 💙</p>
         )}
         <p className="hint mt">La racha se mantiene cuando cada miembro activo registra al menos una acción. Las pausas y los días de descanso no la rompen.</p>
@@ -366,6 +372,15 @@ export function GroupScreen({ id }: { id: string }) {
           <div className="row between small bold"><span>Objetivo común semanal</span><span>{weekTotal}/{g.weeklyGoal}</span></div>
           <Bar value={(weekTotal / g.weeklyGoal) * 100} color="var(--sky-deep)" height={10} />
         </div>
+        {g.dailyGoal > 0 && (
+          <div>
+            <div className="row between small bold"><span>Objetivo de hoy</span><span>{todayTotal}/{g.dailyGoal}{todayTotal >= g.dailyGoal ? ' ✅' : ''}</span></div>
+            <Bar value={(todayTotal / g.dailyGoal) * 100} color="var(--ok)" height={10} />
+          </div>
+        )}
+        {isAdmin && (
+          <button className="btn text small" style={{ alignSelf: 'flex-start' }} onClick={() => setEditing(true)}><Icon name="edit" size={15} /> Editar objetivos</button>
+        )}
         {topPillars.map(([p, n]) => (
           <div key={p} className="pillar-row" style={{ padding: 0 }}>
             <PillarBadge id={p as PillarId} size="sm" />
@@ -410,6 +425,9 @@ export function GroupScreen({ id }: { id: string }) {
                   {m.pauseUntil && m.pauseUntil >= dayKey(today) ? `En pausa hasta el ${formatShortDate(m.pauseUntil)}` : m.shareMetrics ? `${n} acciones esta semana` : 'Métricas privadas'}
                 </span>
               </span>
+              {isAdmin && m.userId !== me.id && (
+                <button className="icon-btn" aria-label={`Opciones de ${p?.name ?? 'miembro'}`} onClick={() => setMemberMenu(m.userId)}><Icon name="dots" size={24} stroke={3} /></button>
+              )}
             </div>
           );
         })}
@@ -419,10 +437,21 @@ export function GroupScreen({ id }: { id: string }) {
       {feed.length ? <div className="col" style={{ gap: 16 }}>{feed.map((a) => <Post key={a.id} a={a} />)}</div> : <p className="subtle">Todavía no hay acciones compartidas.</p>}
 
       <Sheet open={settings} onClose={() => setSettings(false)} title="Ajustes del grupo">
+        {isAdmin && (
+          <button className="btn block" style={{ marginBottom: 12 }} onClick={() => { setSettings(false); setEditing(true); }}>
+            <Icon name="edit" size={17} /> Editar grupo
+          </button>
+        )}
         <div className="card tint row between">
           <span><span className="subtle small">Código de invitación</span><br /><b style={{ fontSize: 18, letterSpacing: 1 }}>{g.inviteCode}</b></span>
           <button className="btn small" onClick={() => { navigator.clipboard?.writeText(g.inviteCode).then(() => toast('Código copiado'), () => toast(g.inviteCode)); }}><Icon name="copy" size={16} /> Copiar</button>
         </div>
+        {isAdmin && (
+          <button className="btn text small" onClick={async () => {
+            if (!confirm('El código actual dejará de funcionar. ¿Generar uno nuevo?')) return;
+            await run((b) => b.newInviteCode(id), 'Código nuevo creado');
+          }}><Icon name="flip" size={15} /> Generar código nuevo</button>
+        )}
         {myMember && (
           <>
             <div className="setting">
@@ -444,25 +473,133 @@ export function GroupScreen({ id }: { id: string }) {
             </div>
           </>
         )}
-        {isAdmin && (
-          <div className="field mt">
-            <label>Días de descanso del grupo</label>
-            <div className="chips">
-              {[1, 2, 3, 4, 5, 6, 0].map((d) => {
-                const on = g.restWeekdays.includes(d);
-                return <button key={d} className={`chip ${on ? 'on' : ''}`} onClick={() => run((b) => b.updateGroup(id, { restWeekdays: on ? g.restWeekdays.filter((x) => x !== d) : [...g.restWeekdays, d] }))}>{WEEKDAYS[d].slice(0, 3)}</button>;
-              })}
-            </div>
-            <span className="hint">Esos días no cuentan para la racha: descansar también es cuidarse.</span>
-          </div>
-        )}
         <button className="btn danger block mt-l" onClick={async () => {
           if (!confirm('¿Seguro que quieres salir del grupo?')) return;
           await run((b) => b.leaveGroup(id), 'Has salido del grupo');
           router.navigate('/social?tab=grupos', { replace: true });
         }}>Salir del grupo</button>
       </Sheet>
+
+      {editing && <EditGroupSheet group={g} onClose={() => setEditing(false)} />}
+
+      <Sheet open={!!memberMenu} onClose={() => setMemberMenu(null)} title={profiles.get(memberMenu ?? '')?.name}>
+        {memberMenu && (() => {
+          const m = members.find((x) => x.userId === memberMenu);
+          if (!m) return null;
+          const name = profiles.get(m.userId)?.name ?? 'esta persona';
+          return (
+            <div className="list">
+              {m.role === 'admin' ? (
+                <button className="list-item" onClick={async () => { await run((b) => b.setMemberRole(id, m.userId, 'member'), `${name} ya no administra el grupo`); setMemberMenu(null); }}>
+                  <Icon name="user" style={{ color: 'var(--sky-deep)' }} /><span className="grow">Quitar como administrador</span>
+                </button>
+              ) : (
+                <button className="list-item" onClick={async () => { await run((b) => b.setMemberRole(id, m.userId, 'admin'), `${name} ahora administra el grupo`); setMemberMenu(null); }}>
+                  <Icon name="key" style={{ color: 'var(--sky-deep)' }} /><span className="grow">Nombrar administrador</span>
+                </button>
+              )}
+              <button className="list-item" style={{ color: 'var(--danger)' }} onClick={async () => {
+                if (!confirm(`¿Sacar a ${name} del grupo?`)) return;
+                await run((b) => b.removeMember(id, m.userId), `${name} ya no está en el grupo`);
+                setMemberMenu(null);
+              }}>
+                <Icon name="trash" /><span className="grow">Sacar del grupo</span>
+              </button>
+            </div>
+          );
+        })()}
+      </Sheet>
     </div>
+  );
+}
+
+const GROUP_IMAGES = ['scene:sendero', 'scene:bosque', 'scene:meditar', 'scene:atardecer', 'scene:correr', 'scene:ensalada', 'scene:libro', 'scene:cafe'];
+
+/** Editor del grupo, solo para administración: nombre, descripción, imagen, objetivos y descansos. */
+function EditGroupSheet({ group, onClose }: { group: Group; onClose: () => void }) {
+  const { run } = useApp();
+  const [name, setName] = useState(group.name);
+  const [description, setDescription] = useState(group.description);
+  const [image, setImage] = useState<string | Blob>(group.image || 'scene:sendero');
+  const [preview, setPreview] = useState('');
+  const [weeklyGoal, setWeeklyGoal] = useState(group.weeklyGoal);
+  const [dailyGoal, setDailyGoal] = useState(group.dailyGoal);
+  const [restWeekdays, setRestWeekdays] = useState(group.restWeekdays);
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const stepper = (value: number, set: (n: number) => void, min: number, max: number, step = 1) => (
+    <div className="row" style={{ gap: 8 }}>
+      <button className="btn soft small" style={{ width: 40, padding: 0 }} aria-label="Menos" onClick={() => set(Math.max(min, value - step))}>−</button>
+      <input className="input" style={{ width: 72, textAlign: 'center', padding: '8px 6px' }} type="number" inputMode="numeric" min={min} max={max} value={value}
+        onChange={(e) => set(Math.min(max, Math.max(min, Number(e.target.value) || 0)))} />
+      <button className="btn soft small" style={{ width: 40, padding: 0 }} aria-label="Más" onClick={() => set(Math.min(max, value + step))}>+</button>
+    </div>
+  );
+
+  async function save() {
+    setBusy(true);
+    const ok = await run(async (b) => {
+      await b.updateGroup(group.id, {
+        name, description, weeklyGoal, dailyGoal, restWeekdays,
+        ...(image !== group.image ? { image } : {}),
+      });
+      return true;
+    }, 'Grupo actualizado');
+    setBusy(false);
+    if (ok) onClose();
+  }
+
+  return (
+    <Sheet open onClose={onClose} title="Editar grupo">
+      <div className="col" style={{ gap: 14 }}>
+        <div className="field">
+          <label>Imagen</label>
+          <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
+            {GROUP_IMAGES.map((src) => (
+              <button key={src} className="thumb" aria-label="Elegir imagen" onClick={() => { setImage(src); setPreview(''); }}
+                style={{ width: 52, height: 52, outline: image === src ? '3px solid var(--sky-deep)' : 'none', outlineOffset: 2 }}>
+                <Photo src={src} />
+              </button>
+            ))}
+            <button className="thumb" aria-label="Subir una foto" onClick={() => fileRef.current?.click()}
+              style={{ width: 52, height: 52, display: 'grid', placeItems: 'center', background: 'var(--sky-light)', color: 'var(--sky-deep)', outline: typeof image !== 'string' ? '3px solid var(--sky-deep)' : 'none', outlineOffset: 2 }}>
+              {preview ? <img src={preview} className="photo" alt="" /> : <Icon name="image" />}
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" hidden onChange={async (e) => {
+              const f = e.target.files?.[0];
+              if (!f) return;
+              const blob = await compressImage(f, 800);
+              setImage(blob);
+              setPreview(URL.createObjectURL(blob));
+            }} />
+          </div>
+        </div>
+        <div className="field"><label htmlFor="eg-name">Nombre</label><input id="eg-name" className="input" value={name} maxLength={60} onChange={(e) => setName(e.target.value)} /></div>
+        <div className="field"><label htmlFor="eg-desc">Descripción</label><textarea id="eg-desc" className="textarea" style={{ minHeight: 64 }} value={description} maxLength={200} onChange={(e) => setDescription(e.target.value)} /></div>
+        <div className="setting" style={{ paddingTop: 0 }}>
+          <div className="grow"><b style={{ fontSize: 14 }}>Objetivo semanal</b><p className="subtle">Acciones del grupo entre todos, cada semana.</p></div>
+          {stepper(weeklyGoal, setWeeklyGoal, 1, 500)}
+        </div>
+        <div className="setting">
+          <div className="grow"><b style={{ fontSize: 14 }}>Objetivo diario</b><p className="subtle">{dailyGoal ? 'Acciones del grupo entre todos, cada día.' : 'Sin objetivo diario (pon 1 o más para activarlo).'}</p></div>
+          {stepper(dailyGoal, setDailyGoal, 0, 100)}
+        </div>
+        <div className="field">
+          <label>Días de descanso del grupo</label>
+          <div className="chips">
+            {[1, 2, 3, 4, 5, 6, 0].map((d) => {
+              const on = restWeekdays.includes(d);
+              return <button key={d} className={`chip ${on ? 'on' : ''}`} onClick={() => setRestWeekdays(on ? restWeekdays.filter((x) => x !== d) : [...restWeekdays, d])}>{WEEKDAYS[d].slice(0, 3)}</button>;
+            })}
+          </div>
+          <span className="hint">Esos días no cuentan para la racha: descansar también es cuidarse.</span>
+        </div>
+        <div className="row">
+          <button className="btn ghost grow" onClick={onClose}>Cancelar</button>
+          <button className="btn grow" disabled={busy || !name.trim()} onClick={save}>{busy ? 'Guardando…' : 'Guardar'}</button>
+        </div>
+      </div>
+    </Sheet>
   );
 }
 

@@ -103,7 +103,7 @@ const toAction = (r, me) => ({
 });
 const toGroup = (r) => ({
   id: r.id, name: r.name, description: r.description, image: r.image, inviteCode: r.invite_code, createdBy: r.created_by,
-  createdAt: r.created_at, weeklyGoal: r.weekly_goal, restWeekdays: r.rest_weekdays.map(Number),
+  createdAt: r.created_at, weeklyGoal: r.weekly_goal, dailyGoal: r.daily_goal ?? 0, restWeekdays: r.rest_weekdays.map(Number),
 });
 const toMember = (r) => ({
   groupId: r.group_id, userId: r.user_id, role: r.role, joinedAt: r.joined_at, pauseFrom: r.pause_from,
@@ -367,10 +367,11 @@ const rpc = {
     try {
       await client.query('begin');
       const { rows } = await client.query(
-        `insert into groups (name, description, image, invite_code, created_by, weekly_goal, rest_weekdays)
-         values ($1,$2,$3,$4,$5,$6,$7) returning *`,
+        `insert into groups (name, description, image, invite_code, created_by, weekly_goal, rest_weekdays, daily_goal)
+         values ($1,$2,$3,$4,$5,$6,$7,$8) returning *`,
         [name, str(input.description, 200), checkPhotoRef(input.image ?? ''), inviteCode(), me,
-          Math.min(500, Math.max(1, Number(input.weeklyGoal) || 20)), (input.restWeekdays ?? []).filter((d) => d >= 0 && d <= 6)],
+          Math.min(500, Math.max(1, Number(input.weeklyGoal) || 20)), (input.restWeekdays ?? []).filter((d) => d >= 0 && d <= 6),
+          Math.min(100, Math.max(0, Math.round(Number(input.dailyGoal) || 0)))],
       );
       await client.query(`insert into group_members (group_id, user_id, role) values ($1, $2, 'admin')`, [rows[0].id, me]);
       await client.query('commit');
@@ -399,9 +400,39 @@ const rpc = {
     else if (!rows.some((r) => r.role === 'admin')) await q(`update group_members set role = 'admin' where group_id = $1 and user_id = $2`, [groupId, rows[0].user_id]);
   },
 
-  async updateGroup(me, [groupId, patch]) {
+  async requireAdmin(me, groupId) {
+    if (!isUuid(groupId)) fail('Grupo no válido.');
     const { rowCount } = await q(`select 1 from group_members where group_id = $1 and user_id = $2 and role = 'admin'`, [groupId, me]);
-    if (!rowCount) fail('Solo las personas administradoras pueden editar el grupo.', 403);
+    if (!rowCount) fail('Solo las personas administradoras pueden hacer esto.', 403);
+  },
+
+  async setMemberRole(me, [groupId, userId, role]) {
+    await rpc.requireAdmin(me, groupId);
+    if (!isUuid(userId) || !['admin', 'member'].includes(role)) fail('Petición no válida.');
+    if (role === 'member') {
+      const { rows } = await q(`select user_id from group_members where group_id = $1 and role = 'admin'`, [groupId]);
+      if (rows.length <= 1 && rows[0]?.user_id === userId) fail('El grupo necesita al menos una persona administradora.');
+    }
+    await q('update group_members set role = $3 where group_id = $1 and user_id = $2', [groupId, userId, role]);
+  },
+
+  async removeMember(me, [groupId, userId]) {
+    await rpc.requireAdmin(me, groupId);
+    if (userId === me) fail('Para salir tú, usa «Salir del grupo».');
+    if (isUuid(userId)) await q('delete from group_members where group_id = $1 and user_id = $2', [groupId, userId]);
+  },
+
+  async newInviteCode(me, [groupId]) {
+    await rpc.requireAdmin(me, groupId);
+    const code = inviteCode();
+    await q('update groups set invite_code = $2 where id = $1', [groupId, code]);
+    return code;
+  },
+
+  async updateGroup(me, [groupId, patch]) {
+    await rpc.requireAdmin(me, groupId);
+    if (patch.image !== undefined) await q('update groups set image = $2 where id = $1', [groupId, checkPhotoRef(patch.image)]);
+    if (patch.dailyGoal !== undefined) await q('update groups set daily_goal = $2 where id = $1', [groupId, Math.min(100, Math.max(0, Math.round(Number(patch.dailyGoal) || 0)))]);
     if (patch.name !== undefined) await q('update groups set name = $2 where id = $1', [groupId, str(patch.name, 60) || 'Grupo']);
     if (patch.description !== undefined) await q('update groups set description = $2 where id = $1', [groupId, str(patch.description, 200)]);
     if (patch.weeklyGoal !== undefined) await q('update groups set weekly_goal = $2 where id = $1', [groupId, Math.min(500, Math.max(1, Number(patch.weeklyGoal) || 20))]);
@@ -580,7 +611,7 @@ const server = createServer(async (req, res) => {
     if (photo && req.method === 'GET') return await servePhoto(me, photo[1], res);
 
     const call = /^\/api\/rpc\/([a-zA-Z]+)$/.exec(path);
-    if (call && req.method === 'POST' && Object.hasOwn(rpc, call[1]) && call[1] !== 'canSeeAction') {
+    if (call && req.method === 'POST' && Object.hasOwn(rpc, call[1]) && !['canSeeAction', 'requireAdmin'].includes(call[1])) {
       const body = await readJson(req);
       const result = await rpc[call[1]](me, Array.isArray(body.args) ? body.args : []);
       if (call[1] === 'deleteAccount') res.setHeader('Set-Cookie', cookie('', 0));

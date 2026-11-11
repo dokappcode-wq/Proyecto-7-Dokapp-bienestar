@@ -9,8 +9,12 @@ export interface NewGroupInput {
   description: string;
   image: string | Blob;
   weeklyGoal: number;
+  dailyGoal: number;
   restWeekdays: number[];
 }
+
+/** Lo que la administración de un grupo puede cambiar. `image` admite una foto nueva (Blob). */
+export type GroupPatch = Partial<Pick<Group, 'name' | 'description' | 'weeklyGoal' | 'dailyGoal' | 'restWeekdays'>> & { image?: string | Blob };
 
 /**
  * Contrato común de persistencia. Hay dos implementaciones:
@@ -47,7 +51,12 @@ export interface Backend {
   createGroup(input: NewGroupInput): Promise<Group>;
   joinGroup(inviteCode: string): Promise<Group>;
   leaveGroup(groupId: string): Promise<void>;
-  updateGroup(groupId: string, patch: Partial<Pick<Group, 'name' | 'description' | 'weeklyGoal' | 'restWeekdays'>>): Promise<void>;
+  updateGroup(groupId: string, patch: GroupPatch): Promise<void>;
+  /** Solo administración: cambia el rol de un miembro o lo saca del grupo. */
+  setMemberRole(groupId: string, userId: string, role: 'admin' | 'member'): Promise<void>;
+  removeMember(groupId: string, userId: string): Promise<void>;
+  /** Solo administración: genera un código de invitación nuevo (el anterior deja de valer). */
+  newInviteCode(groupId: string): Promise<string>;
   updateMembership(groupId: string, patch: Partial<Pick<GroupMember, 'pauseFrom' | 'pauseUntil' | 'pauseReason' | 'shareMetrics'>>): Promise<void>;
 
   saveGoal(goal: Goal): Promise<void>;

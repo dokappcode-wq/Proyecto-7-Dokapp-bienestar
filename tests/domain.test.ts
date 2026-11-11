@@ -62,7 +62,7 @@ describe('racha personal', () => {
 });
 
 describe('racha de grupo', () => {
-  const group: Group = { id: 'g', name: 'G', description: '', image: '', inviteCode: 'X', createdBy: 'a', createdAt: addDays(TODAY, -20).toISOString(), weeklyGoal: 10, restWeekdays: [] };
+  const group: Group = { id: 'g', name: 'G', description: '', image: '', inviteCode: 'X', createdBy: 'a', createdAt: addDays(TODAY, -20).toISOString(), weeklyGoal: 10, dailyGoal: 0, restWeekdays: [] };
   const member = (userId: string): GroupMember => ({ groupId: 'g', userId, role: 'member', joinedAt: group.createdAt, pauseFrom: null, pauseUntil: null, pauseReason: '', shareMetrics: true });
   const row = (userId: string, daysAgo: number, count = 1, rest = false): GroupActivity => ({ groupId: 'g', userId, day: dayKey(addDays(TODAY, -daysAgo)), count, pillars: ['fisica'], rest });
 

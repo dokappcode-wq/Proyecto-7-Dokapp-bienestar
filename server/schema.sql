@@ -143,3 +143,6 @@ create table if not exists user_settings (
   user_id uuid primary key references users on delete cascade,
   settings jsonb not null
 );
+
+-- v2: objetivo diario del grupo (0 = sin objetivo diario).
+alter table groups add column if not exists daily_goal int not null default 0;

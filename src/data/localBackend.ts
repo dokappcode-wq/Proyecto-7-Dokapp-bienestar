@@ -9,7 +9,7 @@ import type {
 import type { KV } from '../lib/kv';
 import type { PhotoStore } from '../lib/photoStore';
 import { resolveStaticRef } from '../lib/scenes';
-import { Backend, BackendError, NewGroupInput, inviteCode, uid } from './backend';
+import { Backend, BackendError, GroupPatch, NewGroupInput, inviteCode, uid } from './backend';
 import { LocalDB, defaultSettings, emptyDB, seedCommunity, seedDemoUser, simulateCommunity } from './seed';
 
 const KEY = 'dokapp:db:v1';
@@ -195,7 +195,7 @@ export class LocalBackend implements Backend {
       profiles: d.profiles,
       actions,
       follows: d.follows.filter((f) => f.status === 'accepted' || f.followerId === me || f.followingId === me),
-      groups: d.groups.filter((g) => myGroups.has(g.id)),
+      groups: d.groups.filter((g) => myGroups.has(g.id)).map((g) => ({ ...g, dailyGoal: g.dailyGoal ?? 0 })),
       members,
       groupActivity,
       reactions: d.reactions.filter((r) => ids.has(r.actionId)),
@@ -358,7 +358,7 @@ export class LocalBackend implements Backend {
     }
     const g: Group = {
       id: uid(), name: input.name.trim(), description: input.description.trim(), image, inviteCode: inviteCode(),
-      createdBy: me, createdAt: this.now().toISOString(), weeklyGoal: input.weeklyGoal, restWeekdays: input.restWeekdays,
+      createdBy: me, createdAt: this.now().toISOString(), weeklyGoal: input.weeklyGoal, dailyGoal: input.dailyGoal, restWeekdays: input.restWeekdays,
     };
     this.db.groups.push(g);
     this.db.members.push({ groupId: g.id, userId: me, role: 'admin', joinedAt: g.createdAt, pauseFrom: null, pauseUntil: null, pauseReason: '', shareMetrics: false });
@@ -386,10 +386,52 @@ export class LocalBackend implements Backend {
     this.save();
   }
 
-  async updateGroup(groupId: string, patch: Partial<Pick<Group, 'name' | 'description' | 'weeklyGoal' | 'restWeekdays'>>) {
-    if (!this.isAdmin(groupId)) throw new BackendError('Solo las personas administradoras pueden editar el grupo.');
-    Object.assign(this.db.groups.find((g) => g.id === groupId)!, patch);
+  private requireAdmin(groupId: string) {
+    if (!this.isAdmin(groupId)) throw new BackendError('Solo las personas administradoras pueden hacer esto.');
+  }
+
+  async updateGroup(groupId: string, patch: GroupPatch) {
+    this.requireAdmin(groupId);
+    const g = this.db.groups.find((x) => x.id === groupId)!;
+    const { image, ...rest } = patch;
+    if (rest.name !== undefined) rest.name = rest.name.trim().slice(0, 60) || g.name;
+    if (rest.description !== undefined) rest.description = rest.description.trim().slice(0, 200);
+    if (rest.weeklyGoal !== undefined) rest.weeklyGoal = Math.min(500, Math.max(1, Math.round(rest.weeklyGoal)));
+    if (rest.dailyGoal !== undefined) rest.dailyGoal = Math.min(100, Math.max(0, Math.round(rest.dailyGoal)));
+    if (image instanceof Blob) {
+      const id = uid();
+      await this.photos.put(id, image);
+      if (g.image.startsWith('idb:')) await this.photos.delete(g.image.slice(4));
+      g.image = `idb:${id}`;
+    } else if (image !== undefined) g.image = image;
+    Object.assign(g, rest);
     this.save();
+  }
+
+  async setMemberRole(groupId: string, userId: string, role: 'admin' | 'member') {
+    this.requireAdmin(groupId);
+    const members = this.db.members.filter((m) => m.groupId === groupId);
+    if (role === 'member' && members.filter((m) => m.role === 'admin').length <= 1 && members.find((m) => m.userId === userId)?.role === 'admin') {
+      throw new BackendError('El grupo necesita al menos una persona administradora.');
+    }
+    const m = members.find((x) => x.userId === userId);
+    if (m) m.role = role;
+    this.save();
+  }
+
+  async removeMember(groupId: string, userId: string) {
+    this.requireAdmin(groupId);
+    if (userId === this.me()) throw new BackendError('Para salir tú, usa «Salir del grupo».');
+    this.db.members = this.db.members.filter((m) => !(m.groupId === groupId && m.userId === userId));
+    this.save();
+  }
+
+  async newInviteCode(groupId: string) {
+    this.requireAdmin(groupId);
+    const g = this.db.groups.find((x) => x.id === groupId)!;
+    g.inviteCode = inviteCode();
+    this.save();
+    return g.inviteCode;
   }
 
   async updateMembership(groupId: string, patch: Partial<Pick<GroupMember, 'pauseFrom' | 'pauseUntil' | 'pauseReason' | 'shareMetrics'>>) {

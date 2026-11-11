@@ -62,6 +62,8 @@ export interface Group {
   createdAt: string;
   /** Objetivo común: acciones semanales del grupo. */
   weeklyGoal: number;
+  /** Objetivo común: acciones diarias del grupo (0 = sin objetivo diario). */
+  dailyGoal: number;
   /** Días de la semana (0=domingo) que cuentan como descanso para todo el grupo. */
   restWeekdays: number[];
 }

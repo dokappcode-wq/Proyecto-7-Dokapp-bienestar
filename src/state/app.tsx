@@ -153,9 +153,13 @@ export function AppProvider({ backend, router, preview = false, children }: { ba
   return (
     <Ctx.Provider value={value}>
       {children}
-      {toasts.map((t) => (
-        <div key={t.id} className={`toast ${t.kind === 'error' ? 'error' : ''}`} role="status">{t.text}</div>
-      ))}
+      {toasts.length > 0 && (
+        <div className="toasts">
+          {toasts.map((t) => (
+            <div key={t.id} className={`toast ${t.kind === 'error' ? 'error' : ''}`} role="status">{t.text}</div>
+          ))}
+        </div>
+      )}
     </Ctx.Provider>
   );
 }
